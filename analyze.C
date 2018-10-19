@@ -51,7 +51,7 @@ TGraph* getWaveForm(TString infilename="../data/mm36/VBB_0V/C1600000.dat")
 }
 
 //Main function
-Bool_t test6(TString file_in_path = "../data/mm36/VBB_0V")
+Bool_t analyze(TString file_in_path = "../data/mm36/VBB_0V")
 {
     TString file_runlist = file_in_path + "/list.txt";
     ifstream f_runlist(file_runlist.Data());
@@ -69,7 +69,7 @@ Bool_t test6(TString file_in_path = "../data/mm36/VBB_0V")
     const Int_t n_files = n_cnt;
     cout << "number of files found: " << n_files << endl; //Read number of data file
     
-    TFile *f_out = new TFile("test6.root","RECREATE"); //Create Tree
+    TFile *f_out = new TFile("analyze.root","RECREATE"); //Create Tree
 
     TString file_name_event;
     Int_t i;
