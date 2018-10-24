@@ -53,6 +53,7 @@ TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C16000
 //Main function
 Bool_t analyze(
                TString file_in_path = "../data/test/oscilloscope/VBB-0.0",
+               TString file_out_path = "../data/test/oscilloscope/results/VBB-0.0",
                Float_t vbb = -0.0
                )
 {
@@ -72,7 +73,14 @@ Bool_t analyze(
     const Int_t n_files = n_cnt;
     cout << "number of files found: " << n_files << endl; //Read number of data file
     
-    TFile *f_out = new TFile("analyze.root","RECREATE");
+    if (file_out_path.CompareTo("")==0) {
+        file_out_path=file_in_path;
+    }
+    
+    cout << "file out path: " << file_out_path.Data() << endl;
+    
+    TFile *f_out = new TFile(Form("%s/analyze.root", file_out_path.Data()), "RECREATE");
+    f_out->cd();
     TString dirname = "vbb_"; dirname += vbb;
     f_out->mkdir(dirname.Data());
     
@@ -90,7 +98,7 @@ Bool_t analyze(
         
         f_runlist >> file_name_event;
         fn = file_in_path + "/" + file_name_event;
-
+        
         cout << "'" << fn << "'" << "is opening..." << endl;
         
         TGraph *gr = getWaveForm(fn);
@@ -101,19 +109,20 @@ Bool_t analyze(
         gr->SetMarkerStyle(7);
         gr->SetTitle(";Time (#mus);Voltage (mV)");
         
-/*        TMultiGraph *mg = new TMultiGraph();
-        mg->Add(gr);
-        mg->SetName("%i_th", i_file);
-        mg->SetTitle(";Time (#mus);Voltage (mV)");
-        mg->Write();
-*/
+        /*        TMultiGraph *mg = new TMultiGraph();
+         mg->Add(gr);
+         mg->SetName("%i_th", i_file);
+         mg->SetTitle(";Time (#mus);Voltage (mV)");
+         mg->Write();
+         */
         f_out->cd(dirname.Data());
         gr->Write();
         delete gr;
-        }
-
+    }
+    
     f_out->cd();
     f_out->Close();
-
+    
     return kTRUE;
 }
+
