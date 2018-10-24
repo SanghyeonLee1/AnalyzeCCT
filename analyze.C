@@ -52,7 +52,7 @@ TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C16000
 
 //Main function
 Bool_t analyze(
-               TString file_in_path = "../data/mm36/oscilloscope/VBB-0.0",
+               TString file_in_path = "../data/test/oscilloscope/VBB-0.0",
                Float_t vbb = -0.0
                )
 {
@@ -73,7 +73,9 @@ Bool_t analyze(
     cout << "number of files found: " << n_files << endl; //Read number of data file
     
     TFile *f_out = new TFile("analyze.root","RECREATE");
-
+    TString dirname = "vbb_"; dirname += vbb;
+    f_out->mkdir(dirname.Data());
+    
     TString file_name_event;
     Int_t i;
     Int_t i_file;
@@ -97,13 +99,20 @@ Bool_t analyze(
         gr->SetLineColor(kBlue);
         gr->SetMarkerSize(3);
         gr->SetMarkerStyle(7);
+        gr->SetTitle(";Time (#mus);Voltage (mV)");
         
-        TMultiGraph *mg = new TMultiGraph();
+/*        TMultiGraph *mg = new TMultiGraph();
         mg->Add(gr);
+        mg->SetName("%i_th", i_file);
         mg->SetTitle(";Time (#mus);Voltage (mV)");
         mg->Write();
-    }
+*/
+        f_out->cd(dirname.Data());
+        gr->Write();
+        delete gr;
+        }
 
+    f_out->cd();
     f_out->Close();
 
     return kTRUE;
