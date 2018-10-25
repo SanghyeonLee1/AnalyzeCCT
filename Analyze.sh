@@ -22,6 +22,9 @@ then
 mkdir $RESULT_DIR
 fi
 
+MAXJOBS=2
+njobs=0
+
 cat $SOFTWARE_DIR/data/vbb_list.txt | \
 while read vbb
 do
@@ -42,5 +45,13 @@ root -l -b <<EOF &
 .x analyze.C+g("${MEAS_DIR}/", "${VBB_RESULT_DIR}", ${vbb})
 .q
 EOF
+
+    let njobs=njobs+1
+    if [ $njobs -ge $MAXJOBS ]
+    then
+        echo "maximum job number spawned, waiting until they're finished"
+        wait
+        njobs=0
+    fi
 done
 
