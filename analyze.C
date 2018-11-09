@@ -20,6 +20,15 @@
 
 using namespace std;
 
+Doublt_t erf(Double_t *x, Double_t *par) {
+//    return par[0] - 0.5*par[3]*TMath::Erf((x[0] - par[1]) / (TMath::Sqrt2()*par[2]));
+    return par[0] - par[3]*(TMath::Exp((-(x[0] - par[1])) / par[2]) - 1);
+    //par[0] -> Pedestal
+    //par[1] -> hit time
+    //par[2] -> fall time
+    //par[3] -> signal amplitude
+}
+
 //Get number of files
 Int_t get_evt_num(TString file_name) {
     Int_t beg = file_name.Last('C');
@@ -42,8 +51,9 @@ TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C16000
     Int_t line=0;
     while (1) {
         if (!in.good()) break;
+        if (line == 485050) break;
         in >> time >> amplitude;
-        wave->SetPoint(line-460000, time*TMath::Power(10,6), amplitude*TMath::Power(10,3));
+        wave->SetPoint(line-465000, time*TMath::Power(10,6), amplitude*TMath::Power(10,3));
         line++;
     }
     
@@ -57,7 +67,7 @@ Bool_t analyze(
                Float_t vbb = -0.0
                )
 {
-    TString file_runlist = file_in_path + "/list.txt";
+    TString file_runlist = file_in_path + "/list.txt";  //Read file list
     ifstream f_runlist(file_runlist.Data());
     if (!f_runlist.is_open()) {
         cout << "runlist file not found! please check list.txt file" << endl;
@@ -71,7 +81,7 @@ Bool_t analyze(
     f_runlist.clear();
     f_runlist.seekg(0, ios::beg);
     const Int_t n_files = n_cnt;
-    cout << "number of files found: " << n_files << endl; //Read number of data file
+    cout << "number of files found: " << n_files << endl;   //Read number of data file
     
     if (file_out_path.CompareTo("")==0) {
         file_out_path=file_in_path;
@@ -85,8 +95,6 @@ Bool_t analyze(
     f_out->mkdir(dirname.Data());
     
     TString file_name_event;
-    Int_t i;
-    Int_t i_file;
     TString fn;
     
     Float_t time = 0;
@@ -109,12 +117,6 @@ Bool_t analyze(
         gr->SetMarkerStyle(7);
         gr->SetTitle(";Time (#mus);Voltage (mV)");
         
-        /*        TMultiGraph *mg = new TMultiGraph();
-         mg->Add(gr);
-         mg->SetName("%i_th", i_file);
-         mg->SetTitle(";Time (#mus);Voltage (mV)");
-         mg->Write();
-         */
         f_out->cd(dirname.Data());
         gr->Write();
         delete gr;
