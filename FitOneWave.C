@@ -24,12 +24,6 @@ Double_t exp(Double_t *x, Double_t *par) {
     return par[0] + par[3]*(TMath::Exp(-(x[0] - par[1]) / par[2]) - 1);
 }
 
-/*
-Double_t pedestal(Double_t *x, Double_t *par) {
-    return 757;
-}
-*/
-
 //Draw graph function
 TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C1600072.dat")
 {
@@ -71,14 +65,9 @@ void oneDrawforms()
     fexpo->SetParameter(1, 0.84);
     fexpo->SetParameter(2, 0.3);
     fexpo->SetParameter(3, 40);
-/*    fexpo->SetParLimits(0, 744., 770.);
-    fexpo->SetParLimits(1, 0.83, 0.85);
-    fexpo->SetParLimits(2, 0.2, 0.2);
-    fexpo->SetParLimits(3, 30., 50.);
-    */
+
     TF1 *ped = new TF1("ped", "pol0", 0.79, 0.835);
     ped->SetParameter(0,756);
-//    ped->SetParLimits(0, 750, 770);
     ped->SetParLimits(0, 750, 760);
 
     gr->Fit(fexpo, "R");
