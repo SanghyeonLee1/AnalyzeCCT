@@ -20,13 +20,8 @@
 
 using namespace std;
 
-Doublt_t erf(Double_t *x, Double_t *par) {
-//    return par[0] - 0.5*par[3]*TMath::Erf((x[0] - par[1]) / (TMath::Sqrt2()*par[2]));
-    return par[0] - par[3]*(TMath::Exp((-(x[0] - par[1])) / par[2]) - 1);
-    //par[0] -> Pedestal
-    //par[1] -> hit time
-    //par[2] -> fall time
-    //par[3] -> signal amplitude
+Double_t exp(Double_t *x, Double_t *par) {
+    return par[0] + par[3]*(TMath::Exp(-(x[0] - par[1]) / par[2]) - 1);
 }
 
 //Get number of files
