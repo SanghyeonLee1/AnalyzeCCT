@@ -25,7 +25,7 @@ Double_t exp(Double_t *x, Double_t *par) {
 }
 
 //Draw graph function
-TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C1600072.dat")
+TGraph* getWaveForm(TString infilename="../data/mm58/oscilloscope/VBB-0.0/C1600047.dat")
 {
     ifstream in;
     in.open(infilename.Data());
@@ -51,51 +51,99 @@ TGraph* getWaveForm(TString infilename="../data/test/oscilloscope/VBB-0.0/C16000
 //Main function
 void FitOneWave()
 {
-    TGraph *gr = getWaveForm("../data/test/oscilloscope/VBB-0.0/C1600072.dat");
+    TGraph *gr = getWaveForm("../data/mm58/oscilloscope/VBB-0.0/C1600047.dat");
     gr->SetMarkerColor(kBlue);
     gr->SetLineColor(kBlue);
     gr->SetMarkerSize(3);
     gr->SetMarkerStyle(7);
+
+    TF1 *PedestalGuide = new TF1("PedestalGuide", "pol0", -4., -3.5);
+    gr->Fit(PedestalGuide, "NOR");
+
+    TF1 *AfterHitGuide = new TF1("AfterHitGuide", "pol0", 0.5, 1.);
+    gr->Fit(AfterHitGuide, "NOR");
     
-    TCanvas *c1 = new TCanvas("c1", "waveform", 800, 600);
-    c1->cd();
-    
-    TF1 *getpedestal = new TF1("getpedestal", "pol0", -4, -3.5);
-    gr->Fit(getpedestal, "NOR");
-    cout << "Pedestal: " << getpedestal->GetParameter(0) << endl;
-    
-    TF1 *getVdrop = new TF1("getVdrop", "pol0", 0.5, 1);
-    gr->Fit(getVdrop, "NOR");
-    cout << "Voltage (after hit): " << getVdrop->GetParameter(0) << endl;
-    
+    //Load the t, V informatin from gr
+    Float_t t[25000];
+    Float_t v[25000];
     Double_t xp, yp;
-    for (Int_t i=24800; i<25000; i++) {
+    for (Int_t i=0; i<25000; i++) {
         gr->GetPoint(i, xp, yp);
-        cout << i << "  " << xp << "  " << yp << endl;
+        t[i] = xp;
+        v[i] = yp;
     }
     
-/*
-    TF1 *fexpo = new TF1("fexpo", exp, 0.835, 0.92, 4);
-    fexpo->SetParameter(0, 753);
-    fexpo->SetParameter(1, 0.84);
-    fexpo->SetParameter(2, 0.3);
-    fexpo->SetParameter(3, 40);
+    TH1F *h1 = new TH1F("h1", "", 60, 200, 900); {
+        for (Int_t i=0; i<25000; i++) {
+            h1->Fill(v[i]);
+        }
+    }
+
+    Double_t sPedestal=0;
+    Double_t sAfterHit=0;
+    const Int_t nBins = h1->GetNbinsX();
+    for (Int_t i=0; i<nBins; i++) {
+        if (h1->GetBinContent(i) - h1->GetBinContent(i-1) > 0 && h1->GetBinContent(i) - h1->GetBinContent(i+1) > 0 && h1->GetBinContent(i) > 1000) {
+            if (h1->GetBinCenter(i) > PedestalGuide->GetParameter(0) - 30.) {sPedestal = h1->GetBinCenter(i);}
+            if (h1->GetBinCenter(i) < PedestalGuide->GetParameter(0) - 30.) {sAfterHit = h1->GetBinCenter(i);}
+        }
+    }
+ 
+    TF1 *Pedestal = new TF1("Pedestal", "gaus", sPedestal-20., sPedestal+20.);
+    h1->Fit(Pedestal, "NOR");
+    cout << "Pedestal: " << Pedestal->GetParameter(1) << endl;
+    cout << "Pedestal Std: " << Pedestal->GetParameter(2) << endl;
+    
+    TF1 *AfterHit = new TF1("AfterHit", "gaus", sAfterHit-10., sAfterHit+10.);
+    h1->Fit(AfterHit, "NOR+");
+    cout << "AfterHit: " << AfterHit->GetParameter(1) << endl;
+    cout << "AfterHit Std: " << AfterHit->GetParameter(2) << endl;
+
+    //for add "v[i] > mean" in next while loop2
+    Double_t mean=0;
+    mean = (Pedestal->GetParameter(1) + AfterHit->GetParameter(1)) / 2;
+
+    //Get Hit time
+    Int_t i=0;
+    while(1) {
+        if (i > 250000) break;
+        if (PedestalGuide->GetParameter(0) - AfterHitGuide->GetParameter(0) < 15.) break;
+        if ((v[i] < Pedestal->GetParameter(1) - Pedestal->GetParameter(2)) && (v[i+50] < mean) && (v[i+600] < AfterHit->GetParameter(1) + 4*AfterHit->GetParameter(2)))break;
+        i++;
+    }
+    
+    cout << "v[i]: " << v[i] << "\n mean: " << mean << endl;
+    
+    TF1 *ped = new TF1("ped", "pol0", t[i-600], t[i]);
+    ped->SetParameter(0, Pedestal->GetParameter(1));
+    ped->SetParLimits(0, Pedestal->GetParameter(1)-Pedestal->GetParameter(2), Pedestal->GetParameter(1)+Pedestal->GetParameter(2));
+    ped->SetRange(t[i-600],t[i]);
+
+    TF1 *fexpo = new TF1("fexpo", exp, t[i], t[i+600], 4);
+    fexpo->SetParameter(0, ped->GetParameter(0));
+    fexpo->SetParameter(1, t[i]);
+    fexpo->SetParameter(2, 0.02);
+    fexpo->SetParameter(3, Pedestal->GetParameter(1) - AfterHit->GetParameter(1));
+    fexpo->SetRange(t[i],t[i+600]);
+  
     fexpo->SetParName(0, "Pedestal");
     fexpo->SetParName(1, "Hit time");
     fexpo->SetParName(2, "Rise time");
     fexpo->SetParName(3, "Signal");
 
-    TF1 *ped = new TF1("ped", "pol0", 0.79, 0.835);
-    ped->SetParameter(0,756);
-    ped->SetParLimits(0, 750, 760);
-*/
-//    gr->Fit(fexpo, "R");
-//    gr->Fit(ped, "R+");
-    
+    gr->Fit(fexpo, "RB");
+    gr->Fit(ped, "RB+");
+
+    Int_t integer=t[i];
+    Double_t Double=t[i];
+    cout << "Float t[i]: " << t[i] << endl;
+
     TMultiGraph *mg = new TMultiGraph();
     
     mg->Add(gr);
-    mg->SetTitle(";Time (#mus);Voltage (mV)");
+    mg->SetTitle("single pixel waveform;Time (#mus);Voltage (mV)");
+    mg->GetXaxis()->SetRangeUser(t[i-100],t[i+300]);
     mg->Draw("APL");
+    //h1->Draw();
 }
 

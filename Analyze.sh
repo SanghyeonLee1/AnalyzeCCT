@@ -9,7 +9,7 @@ EXPECTED_ARGS=1
 if [ ! $# -eq $EXPECTED_ARGS ]
 then
 echo "number of arguments not correct!"
-echo "please type path to data file:"
+echo "please type path to data file: ex) /Users/sanghyeon/Investigator/CCT/data/mm0"
 exit
 fi
 
